@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin – Update Chennai &amp; ROTN data</title>
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card: #fff;
+            --tx: #0e1a2f;
+            --mu: #5d697d;
+            --bd: #e7eaf1;
+            --ok: #0f766e;
+            --okb: #e4f4f1;
+            --bad: #b42318;
+            --badb: #fdebea;
+            --ac: #14284b
+        }
+
+        html,
+        body {
+            background: #fff !important
+        }
+
+        .card {
+            box-shadow: 0 10px 28px -20px rgba(20, 40, 75, .4);
+            border-radius: 18px !important
+        }
+
+        button {
+            border-radius: 999px !important
+        }
+
+        h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            color: #14284b
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--tx);
+            font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif
+        }
+
+        main {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 20px 16px 40px
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 8px 0 2px
+        }
+
+        p.s,
+        .note {
+            color: var(--mu);
+            margin: 0 0 14px;
+            font-size: 14px
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px
+        }
+
+        .row {
+            display: flex;
+            gap: 8px
+        }
+
+        input[type=text] {
+            flex: 1;
+            font-size: 18px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--bd);
+            background: var(--bg);
+            color: var(--tx);
+            min-width: 0
+        }
+
+        input[type=file] {
+            width: 100%;
+            font-size: 14px;
+            padding: 8px
+        }
+
+        button {
+            font-size: 16px;
+            padding: 12px 18px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--ac);
+            color: #fff;
+            cursor: pointer
+        }
+
+        button:disabled {
+            opacity: .5
+        }
+
+        button.alt {
+            background: var(--bg);
+            color: var(--tx);
+            border: 1px solid var(--bd);
+            font-size: 14px;
+            padding: 9px 14px
+        }
+
+        .res {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 10px;
+            display: none
+        }
+
+        .res.ok {
+            background: var(--okb);
+            color: var(--ok);
+            display: block
+        }
+
+        .res.bad {
+            background: var(--badb);
+            color: var(--bad);
+            display: block
+        }
+
+        .res.nf {
+            background: var(--bg);
+            color: var(--mu);
+            display: block;
+            border: 1px solid var(--bd)
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center
+        }
+
+        .stats b {
+            display: block;
+            font-size: 24px
+        }
+
+        .stats span {
+            font-size: 12px;
+            color: var(--mu)
+        }
+
+        .tw {
+            overflow-x: auto;
+            max-height: 340px;
+            overflow-y: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px
+        }
+
+        td,
+        th {
+            padding: 7px 6px;
+            border-bottom: 1px solid var(--bd);
+            text-align: left
+        }
+
+        th {
+            color: var(--mu);
+            font-weight: 600
+        }
+
+        .chips button {
+            background: var(--bg);
+            color: var(--tx);
+            border: 1px solid var(--bd);
+            padding: 6px 12px;
+            font-size: 13px;
+            margin: 0 6px 8px 0
+        }
+
+        .chips button.on {
+            background: var(--ac);
+            color: #fff
+        }
+
+        .dl {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 4px 0 10px
+        }
+
+        .msg {
+            margin-top: 10px;
+            font-size: 14px
+        }
+
+        .msg.e {
+            color: var(--bad)
+        }
+
+        .msg.g {
+            color: var(--ok)
+        }
+
+        [hidden] {
+            display: none !important
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Admin – update the data (Chennai &amp; ROTN)</h1>
+        <p class="s">Version 15 · For the branch only. Nothing is uploaded anywhere: the Excel file is read inside your
+            browser.</p>
+        <div class="card"><b>1. Choose the new daily Excel file</b>
+            <p class="note">Columns needed: Branch, Ticket ID, Added Time. Only Chennai and ROTN rows are used. The file
+                may hold several months (e.g. from 19 May till today); a ticket from any of those months counts as a
+                review. Only the current month forms the denominator.</p>
+            <input type="file" id="file" accept=".xlsx,.xls,.csv">
+            <div id="msg" class="msg"></div>
+            <div class="dl" id="btns" style="margin-top:10px" hidden><button id="dj">2. Download data.json</button>
+            </div>
+        </div>
+        <div class="card"><b>Franchise report: Calls Registered file (optional, daily)</b>
+            <p class="note">Choose the “Calls Registered – All call Type” Excel file. It must contain the Chennai and
+                ROTN branches (or select two files, one per branch, together). The report uses the review data from the
+                file above, or the current data on the website if you did not choose one. Large files can take up to a
+                minute to read.</p>
+            <input type="file" id="cfile" accept=".xlsx,.xls" multiple>
+            <label class="note" style="display:block;margin-top:8px"><input type="checkbox" id="soft" checked> Count
+                “Resolved (soft closure)” as closed</label>
+            <label class="note" id="monw" style="display:block;margin-top:8px" hidden>Month for the denominator (closed
+                tickets): <select id="mon" style="font-size:14px;padding:6px 10px"></select></label>
+            <div id="cmsg" class="msg"></div>
+            <div class="dl" id="cbtns" style="margin-top:10px" hidden><button id="dr">Download
+                    report.json</button><button id="dxs" class="alt">Download technician slab report
+                    (Excel)</button><button id="dun" class="alt">Download rejected tickets (Excel)</button></div>
+        </div>
+        <div class="card"><b>3. Publish</b>
+            <p class="note">On GitHub open your repository → click <i>data.json</i> → pencil/“Upload files” → replace it
+                (and report.json, if you made one) with the files you just downloaded → <i>Commit changes</i>. The
+                website updates within about a minute.</p>
+        </div>
+    </main>
+    <script src="../js/core.js?v=14"></script>
+    <script src="../js/admin.js?v=14"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>

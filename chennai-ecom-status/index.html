@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chennai &amp; ROTN E-Com Review Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0e1a2f;
+      --mu: #5d697d;
+      --line: #e7eaf1;
+      --soft: #f6f8fb;
+      --navy: #14284b;
+      --teal: #0f766e;
+      --tealb: #e4f4f1;
+      --gold: #a8782a;
+      --goldb: #fbf3e2;
+      --serif: "Fraunces", Georgia, "Times New Roman", serif;
+      --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      background: #fff
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font: 15px/1.55 var(--sans);
+      -webkit-font-smoothing: antialiased
+    }
+
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 36px 20px 64px
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      color: inherit
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--navy);
+      outline-offset: 2px
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    h1 {
+      font: 600 clamp(28px, 5vw, 40px)/1.1 var(--serif);
+      letter-spacing: -.02em;
+      margin: 0;
+      color: var(--navy)
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      color: var(--mu);
+      font-size: 14px
+    }
+
+    .sub b {
+      color: var(--ink)
+    }
+
+    .dl {
+      border: 1px solid var(--navy);
+      background: var(--navy);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s, transform .2s
+    }
+
+    .dl:hover {
+      background: #0b1a36
+    }
+
+    .dl:active {
+      transform: scale(.97)
+    }
+
+    .scope {
+      margin: 26px 0 12px;
+      font: 500 20px var(--serif);
+      color: var(--navy)
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px -18px rgba(20, 40, 75, .28)
+    }
+
+    .k {
+      padding: 20px 22px;
+      background: #fff;
+      border-right: 1px solid var(--line)
+    }
+
+    .k:last-child {
+      border: 0;
+      background: linear-gradient(135deg, #fffaf0, #fff 70%)
+    }
+
+    .k b {
+      display: block;
+      font: 600 clamp(26px, 4vw, 36px)/1.1 var(--serif);
+      color: var(--navy);
+      font-variant-numeric: tabular-nums
+    }
+
+    .k:last-child b {
+      color: var(--gold)
+    }
+
+    .k span {
+      display: block;
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--mu)
+    }
+
+    .note {
+      color: var(--mu);
+      font-size: 13px;
+      margin: 14px 2px 0
+    }
+
+    .tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 28px 0 14px;
+      align-items: center
+    }
+
+    .tools input,
+    .tools select {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 12px;
+      padding: 11px 14px;
+      min-width: 0;
+      transition: border-color .2s, background .2s
+    }
+
+    .tools input {
+      flex: 1;
+      min-width: 180px
+    }
+
+    .tools input:focus,
+    .tools select:focus {
+      background: #fff;
+      border-color: var(--navy);
+      outline: 0
+    }
+
+    .seg {
+      display: flex;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 3px;
+      gap: 2px;
+      flex-wrap: wrap
+    }
+
+    .seg button {
+      border: 0;
+      background: transparent;
+      border-radius: 9px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mu);
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .seg button.on {
+      background: #fff;
+      color: var(--navy);
+      box-shadow: 0 1px 6px rgba(20, 40, 75, .14)
+    }
+
+    .fr {
+      display: grid;
+      grid-template-columns: 34px minmax(150px, 1.5fr) minmax(120px, 2fr) 56px 76px 96px;
+      gap: 14px;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      background: #fff;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 14px 10px;
+      cursor: pointer;
+      transition: background .15s
+    }
+
+    .fr:hover {
+      background: var(--soft)
+    }
+
+    .fr:hover .nm b {
+      color: var(--teal)
+    }
+
+    .rk {
+      color: #9aa4b6;
+      font-variant-numeric: tabular-nums;
+      font-size: 13px
+    }
+
+    .nm b {
+      display: block;
+      font-weight: 600;
+      transition: color .15s
+    }
+
+    .nm small {
+      color: var(--mu);
+      font-size: 12px
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 99px;
+      background: #edf0f6;
+      overflow: hidden
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #14b8a6, var(--teal));
+      border-radius: 99px;
+      transition: width .9s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    .pc {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums
+    }
+
+    .nu {
+      color: var(--mu);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums
+    }
+
+    .er {
+      text-align: right;
+      font-weight: 700;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums
+    }
+
+    .bk {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 22px
+    }
+
+    .bk:hover {
+      background: var(--soft)
+    }
+
+    .tl {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+      gap: 16px
+    }
+
+    .tc {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 10px 28px -20px rgba(20, 40, 75, .4)
+    }
+
+    .th {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 6px
+    }
+
+    .th h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 700
+    }
+
+    .th small {
+      color: var(--mu);
+      font-size: 12.5px
+    }
+
+    .te {
+      text-align: right
+    }
+
+    .te span {
+      display: block;
+      color: var(--mu);
+      font-size: 12px
+    }
+
+    .te b {
+      font: 600 24px var(--serif);
+      color: var(--gold);
+      font-variant-numeric: tabular-nums
+    }
+
+    .cg {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line)
+    }
+
+    .ch {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px
+    }
+
+    .chip {
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: var(--soft);
+      color: var(--mu);
+      white-space: nowrap
+    }
+
+    .chip.s {
+      background: var(--tealb);
+      color: var(--teal)
+    }
+
+    .chip.t {
+      background: var(--goldb);
+      color: var(--gold)
+    }
+
+    .trk {
+      position: relative;
+      height: 10px;
+      border-radius: 99px;
+      background: #edf0f6
+    }
+
+    .trk i {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #14b8a6, var(--teal));
+      transition: width .9s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    .trk u {
+      position: absolute;
+      top: -3px;
+      width: 2px;
+      height: 16px;
+      background: #fff;
+      box-shadow: 0 0 0 1px #d4d9e4;
+      border-radius: 2px;
+      transform: translateX(-1px)
+    }
+
+    .lb {
+      position: relative;
+      height: 18px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #8b95a8
+    }
+
+    .lb span {
+      position: absolute;
+      transform: translateX(-50%)
+    }
+
+    .lb span:last-child {
+      transform: translateX(-100%)
+    }
+
+    .nx {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--mu)
+    }
+
+    .nx b {
+      color: var(--ink)
+    }
+
+    .empty {
+      padding: 40px 10px;
+      text-align: center;
+      color: var(--mu)
+    }
+
+    details.rules {
+      margin-top: 40px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 6px 20px;
+      background: var(--soft)
+    }
+
+    details.rules summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 12px 0
+    }
+
+    .rules table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 4px 0 12px
+    }
+
+    .rules th,
+    .rules td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left
+    }
+
+    .rules th {
+      color: var(--mu);
+      font-weight: 600;
+      font-size: 13px
+    }
+
+    .rules p {
+      color: var(--mu);
+      font-size: 13.5px;
+      margin: 0 0 14px
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    @media(max-width:760px) {
+      .kpis {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .k:nth-child(2) {
+        border-right: 0
+      }
+
+      .k:nth-child(-n+2) {
+        border-bottom: 1px solid var(--line)
+      }
+
+      .fr {
+        grid-template-columns: 26px 1fr 64px;
+        gap: 6px 10px
+      }
+
+      .fr .bar {
+        grid-column: 2/4;
+        grid-row: 2
+      }
+
+      .fr .nu {
+        grid-column: 2;
+        grid-row: 3
+      }
+
+      .fr .er {
+        grid-column: 3;
+        grid-row: 3
+      }
+
+      .fr .pc {
+        grid-column: 3;
+        grid-row: 1;
+        text-align: right
+      }
+
+      .tl {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important
+      }
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 22px 0 4px;
+      padding: 4px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 16px
+    }
+
+    .tabs button {
+      flex: 1 1 auto;
+      border: 0;
+      background: transparent;
+      border-radius: 12px;
+      padding: 11px 8px;
+      font-weight: 600;
+      font-size: 12.5px;
+      color: var(--mu);
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap
+    }
+
+    .tabs button:hover {
+      color: var(--navy)
+    }
+
+    .tabs button.on {
+      background: #fff;
+      color: var(--navy);
+      box-shadow: 0 1px 8px rgba(20, 40, 75, .16)
+    }
+
+    .tabs i {
+      font-style: normal;
+      font-size: 11px;
+      margin-left: 5px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: #e9edf5;
+      color: var(--mu)
+    }
+
+    .tabs button.on i {
+      background: var(--navy);
+      color: #fff
+    }
+
+    .pgnote {
+      margin: 16px 0 0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--goldb);
+      color: #6b4a12;
+      font-size: 13.5px
+    }
+
+    .pgnote.r {
+      background: #fdeceb;
+      color: #8f2a22
+    }
+
+    .all .k:last-child {
+      background: linear-gradient(135deg, #e9f7f4, #fff 70%)
+    }
+
+    .all .k:last-child b {
+      color: var(--teal)
+    }
+
+    .risk .k:last-child {
+      background: linear-gradient(135deg, #fff1f0, #fff 70%)
+    }
+
+    .risk .k:last-child b {
+      color: #b42318
+    }
+
+    .gn {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--teal)
+    }
+
+    .ls {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #b42318
+    }
+
+    .er {
+      line-height: 1.25
+    }
+
+    .neg {
+      color: #b42318;
+      font-weight: 700
+    }
+
+    .pos {
+      color: var(--teal);
+      font-weight: 700
+    }
+
+    .tw {
+      overflow: auto;
+      max-height: 560px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin-top: 6px
+    }
+
+    .tw table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px
+    }
+
+    .tw th,
+    .tw td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap
+    }
+
+    .tw th {
+      position: sticky;
+      top: 0;
+      background: var(--soft);
+      color: var(--mu);
+      font-weight: 700;
+      font-size: 12.5px
+    }
+
+    .tw tr:hover td {
+      background: #fafbfd
+    }
+
+    .tw td.n,
+    .tw th.n {
+      text-align: right;
+      font-variant-numeric: tabular-nums
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px
+    }
+
+    .two .tw {
+      max-height: none
+    }
+
+    .sub2 {
+      font: 500 17px var(--serif);
+      color: var(--navy);
+      margin: 22px 0 8px
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 99px;
+      background: var(--soft);
+      color: var(--mu)
+    }
+
+    .tag.y {
+      background: var(--tealb);
+      color: var(--teal)
+    }
+
+    .tag.n {
+      background: #fdeceb;
+      color: #b42318
+    }
+
+    @media(max-width:760px) {
+      .two {
+        grid-template-columns: 1fr
+      }
+
+      .tabs button {
+        flex: 1 1 45%
+      }
+    }
+
+    details.rules {
+      margin-top: 22px
+    }
+
+    .kpis.k3 {
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 12px
+    }
+
+    .kpis.k3 .k:last-child {
+      background: #fff
+    }
+
+    .kpis.k3 .k:last-child b {
+      color: #b42318
+    }
+
+    .kpis.k3 .k:nth-child(2) b {
+      color: var(--teal)
+    }
+
+    th .fa {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      color: #9aa4b6;
+      font-size: 11px;
+      padding: 0 0 0 6px
+    }
+
+    th .fa:hover,
+    th .fa.on {
+      color: var(--teal)
+    }
+
+    .pop {
+      position: fixed;
+      z-index: 50;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 14px 40px -10px rgba(20, 40, 75, .35);
+      padding: 10px;
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .pop .lst {
+      overflow: auto;
+      max-height: 200px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 4px
+    }
+
+    .pop label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      padding: 3px 4px;
+      cursor: pointer
+    }
+
+    .pop input[type=search] {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--soft);
+      width: 100%
+    }
+
+    .pop .row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap
+    }
+
+    .pop button {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer
+    }
+
+    .pop button.pr {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy)
+    }
+
+    .lnk {
+      border: 0;
+      background: transparent;
+      color: var(--teal);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0 4px
+    }
+
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      max-width: 540px;
+      width: calc(100% - 32px);
+      max-height: 88vh;
+      overflow: auto;
+      box-shadow: 0 30px 80px -20px rgba(20, 40, 75, .5)
+    }
+
+    dialog::backdrop {
+      background: rgba(14, 26, 47, .35)
+    }
+
+    dialog h3 {
+      margin: 0 0 4px;
+      font: 500 21px var(--serif);
+      color: var(--navy)
+    }
+
+    dialog fieldset {
+      border: 0;
+      padding: 0;
+      margin: 14px 0 0
+    }
+
+    dialog legend {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--mu);
+      padding: 0;
+      margin-bottom: 4px
+    }
+
+    dialog label {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 14px;
+      padding: 3px 0;
+      cursor: pointer
+    }
+
+    .dact {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      align-items: center
+    }
+
+    .dact .dl {
+      padding: 9px 20px
+    }
+
+    .fmt {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      font-size: 14px
+    }
+
+    .fmt label {
+      padding: 0
+    }
+
+    @media(max-width:760px) {
+      .kpis.k3 {
+        grid-template-columns: 1fr
+      }
+
+      .kpis.k3 .k {
+        border-right: 0;
+        border-bottom: 1px solid var(--line)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Chennai &amp; ROTN E-Com Review Dashboard</h1>
+        <p class="sub">Franchise review %, technician slab earnings · data updated till <b id="asof">…</b></p>
+      </div><button class="dl" id="rdl">Download Excel</button>
+    </div>
+    <details class="rules" open>
+      <summary>Slab rules and how it is calculated</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Slab (% of tickets reviewed)</th>
+            <th>Category 1: Washing Machine (WM, WD), Cloth Dryer (CD), Microwave (MW)</th>
+            <th>Category 2: AC, Refrigerator (RF), Dishwasher (DW)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>25%</td>
+            <td>₹100</td>
+            <td>₹150</td>
+          </tr>
+          <tr>
+            <td>50%</td>
+            <td>₹150</td>
+            <td>₹250</td>
+          </tr>
+          <tr>
+            <td>75%</td>
+            <td>₹250</td>
+            <td>₹400</td>
+          </tr>
+          <tr>
+            <td>100%</td>
+            <td>₹500</td>
+            <td>₹750</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Review % = reviews ÷ Flipkart India / Cloudtail India installation tickets closed in the current month. Every
+        review ticket is compared with the closed installation tickets of all months in the calls report, and each match
+        counts as a review; only the current month's closed tickets form the denominator. It is worked out separately
+        for each category. Earning = reward per review of the slab reached × all reviews of that category. Industrial
+        products (IND, KF) are not counted.</p>
+      <p><b>Review dashboard</b>: uploaded, accepted (counted as reviews) and rejected tickets, franchise review %,
+        technician slab, earnings and reviews needed for the next slab. <b>Rejected tickets</b>: review tickets that
+        could not be counted (cancelled call, other dealer, not in the calls report). <b>If all uploaded tickets are
+          accepted</b>: the case where every uploaded review ticket, including the rejected ones, is accepted.</p>
+    </details>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+    <p class="note" id="repnote">Loading…</p>
+    <div id="pg-main" class="pg"></div>
+    <div id="pg-rej" class="pg" hidden></div>
+    <div id="pg-all" class="pg all" hidden></div>
+    <div id="pop" class="pop" hidden></div>
+    <dialog id="dlg">
+      <h3>Download Excel</h3>
+      <p class="note" style="margin:0">Tick the subsections you want. The Excel contains all rows (filters and search
+        are not applied).</p>
+      <div class="dact" style="margin-top:10px"><button class="lnk" id="dlall">Select all</button><button class="lnk"
+          id="dlnone">Clear</button></div>
+      <div id="dlbody"></div>
+      <div class="fmt"><label><input type="radio" name="fm" value="one" checked> One workbook (one sheet per
+          subsection)</label><label><input type="radio" name="fm" value="sep"> Separate files</label></div>
+      <p class="note" id="dlmsg" style="color:#b42318"></p>
+      <div class="dact"><button class="dl" id="dlgo">Download selected</button><button class="bk" id="dlx"
+          style="margin:0">Close</button></div>
+    </dialog>
+  </main>
+  <script src="./js/core.js?v=15"></script>
+  <script src="./js/viewer.js?v=15"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
