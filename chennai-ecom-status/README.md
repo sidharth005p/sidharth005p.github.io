@@ -3,11 +3,11 @@
 # Chennai & ROTN E-Com Review Status (GitHub Pages)
 
 Files
-- index.html – public page with 3 sections: Review dashboard, Rejected tickets, If all tickets accepted
+- index.html – public page with the original Review dashboard, a separate Dashboard based on new rules, Rejected tickets, Rejection insights and If all tickets accepted
 - admin.html – for the branch: reads the daily Excel files and makes the new data files
-- core.js – shared calculation code used by admin.html and index.html (upload it too, do not edit it)
+- core.js – shared calculation code used by the admin and public pages; upload it when updated
 - data.json – Chennai / ROTN review tickets (ticket ID, branch, date; replace daily)
-- report.json – everything the 3 sections show (replace daily)
+- report.json – calculations and summaries shown by the dashboards (replace daily)
 
 Set up once *UNCONVENTIONAL DO NOT FOLLOW*
 1. Create a free GitHub account, then New repository: name chennai-ecom-status, Public, tick "Add a README".
@@ -26,7 +26,8 @@ Daily update
 How the report is calculated
 - E-commerce installation ticket = Call Type "INSTALLATION CALL" with Dealer Name containing "Flipkart India" or "Cloudtail India".
 - Closed = status Closed or Resolved (soft closure). The admin page has a tick box to count only Closed.
-- Review taken = the ticket is present in the uploaded review data (data.json, any of the 6 months), whatever its Order ID.
+- Original Review dashboard: a review is any ticket present in the uploaded review data (data.json, any of the 6 months), whatever its Order ID.
+- Dashboard based on new rules: only review tickets whose Added Time is in the selected report month or the month immediately before it are eligible. Other and undated uploads are excluded from both accepted and rejected counts. For a November report, this means November and October uploads.
 - Denominator = e-commerce installation tickets closed in the chosen (current) month only. Numerator = every ticket of the review file that matches a closed e-commerce installation ticket of ANY month in the calls file (the review file timestamp is only the upload time, the ticket itself can belong to any of the 6 months). A technician or franchise with more reviews than current-month closed tickets can therefore show above 100%.
 - Only these products are counted (Product column): WM, WD = Washing Machine; CD = Cloth Dryer; MW = Microwave -> Category 1. AC = Air Conditioner; RF = Refrigerator; DW = Dishwasher -> Category 2. IND, KF and any other product are ignored.
 - Slab is worked out separately for each category: reviews / closed tickets of that technician in that category = 25, 50, 75 or 100%.
@@ -37,7 +38,9 @@ How the report is calculated
 Sections of the website
 - Slab rules are shown at the top of the page.
 - Review dashboard: summary of review tickets uploaded, accepted (counted as reviews) and rejected (not counted); franchise ranking with search, sort and a review % filter; per franchise the technician cards with slab ladder, earnings and reviews needed for the next slab (search and slab filter).
+- Dashboard based on new rules: the same calculations and franchise/technician views, limited to tickets uploaded in the selected report month and the preceding month. The original dashboard remains unchanged.
 - Rejected tickets: review tickets that are not counted, with reason (call Cancelled, closed but other dealer, not in the calls file), franchise, technician and call details. Tabs: Summary, By franchise, All, and one per reason. Every table has a search bar and a filter arrow (▾) on each column (tick values, sort A-Z / Z-A, Clear filters).
+- Rejection insights: key Chennai + ROTN and all-branch findings from Rating_Rejection_Analysis.xlsx, including the leading reasons and prevention checks.
 - If all uploaded tickets are accepted: every uploaded review ticket, including the rejected ones, is accepted. The rejected tickets are added to the reviews of their franchise / technician / category (the closed-ticket denominator does not change). It shows review %, earnings and the extra money compared with now.
 - Download Excel (top right): tick any subsections (for example Franchise summary, Technician slabs, Rejected - Cancelled, All accepted - Technicians) and download them as one workbook (one sheet per subsection) or as separate Excel files. The Excel always contains all rows; filters and search are not applied.
 - Removed in this version: Order ID issues, Possibility of rejection and Earnings if no rejection (page sections, admin buttons and calculation code).

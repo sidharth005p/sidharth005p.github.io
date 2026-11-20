@@ -9,6 +9,19 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({
 } [c]));
 const inr = n => "₹" + Number(n || 0).toLocaleString("en-IN"),
   SL = s => s ? s + "%" : "–";
+const monthLabel = month => {
+  const [year, value] = String(month || "").split("-");
+  const names = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+    "October", "November", "December"
+  ];
+  return names[+value - 1] ? names[+value - 1] + " " + year : month
+};
+const monthWindow = month => {
+  const match = String(month || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return [];
+  const previous = new Date(Date.UTC(+match[1], +match[2] - 2, 1));
+  return [previous.getUTCFullYear() + "-" + String(previous.getUTCMonth() + 1).padStart(2, "0"), month]
+};
 const LB = {
   C1: CORE.CATS.C1.short,
   C2: CORE.CATS.C2.short
@@ -160,19 +173,26 @@ function ftable(host, id, cols, rows, redraw, max) {
   })
 }
 
-/* ============ dashboards (main / all) ============ */
-function mountDash(root, mode) {
-  const all = mode === "all",
+/* ============ dashboards (main / new rules / all) ============ */
+function mountDash(root, mode, report) {
+  const D = report || R,
+    all = mode === "all",
+    rulesOnly = mode === "new",
     $$ = mk(root),
     vis = x => all || x.closed || x.reviews;
   let fsel = "",
     rcat = "all";
+  const meta = R.newRulesMeta || {
+    months: (R.nr && R.nr.window && R.nr.window.months) || monthWindow(R.month || String(R.asof || "").slice(0, 7)),
+    included: D.totals.reviewTickets,
+    excluded: Math.max(0, R.totals.reviewTickets - D.totals.reviewTickets)
+  };
   const rejBy = {};
-  R.rejected.forEach(x => {
+  D.rejected.forEach(x => {
     if (x.fc) rejBy[x.fc] = (rejBy[x.fc] || 0) + 1
   });
   root.innerHTML =
-    `<p class="scope" data-r="scope"></p><section class="kpis" data-r="kp"></section>${all?"":'<section class="kpis k3" data-r="ks"></section>'}${all?`<p class="pgnote">The case where <b>every uploaded review ticket (${R.totals.reviewTickets}) is accepted</b>: the rejected tickets (cancelled calls, other dealers) are added to the reviews of their franchise and technician; the closed-ticket denominator stays the same. ${R.totals.unattr} ticket${R.totals.unattr===1?"":"s"} with no call record cannot be placed. Extra money = earnings if all accepted − earnings now.</p>`:""}
+    `<p class="scope" data-r="scope"></p>${rulesOnly?`<p class="pgnote">New acceptance rule: only tickets uploaded in ${meta.months.map(monthLabel).join(" and ")} are eligible. Tickets uploaded outside this period or without an upload date are excluded, not accepted. Included ${meta.included} of ${R.totals.reviewTickets} uploaded tickets; ${meta.excluded} excluded.</p>`:""}<section class="kpis" data-r="kp"></section>${all?"":'<section class="kpis k3" data-r="ks"></section>'}${all?`<p class="pgnote">The case where <b>every uploaded review ticket (${D.totals.reviewTickets}) is accepted</b>: the rejected tickets (cancelled calls, other dealers) are added to the reviews of their franchise and technician; the closed-ticket denominator stays the same. ${D.totals.unattr} ticket${D.totals.unattr===1?"":"s"} with no call record cannot be placed. Extra money = earnings if all accepted − earnings now.</p>`:""}
 <section data-r="ov"><div class="tools"><input data-r="q" type="search" placeholder="Search franchise name or code" aria-label="Search franchise"><select data-r="so" aria-label="Sort"><option value="pct">Sort: Review %</option><option value="earn">Sort: Earnings</option>${all?'<option value="gain">Sort: Extra money</option>':""}<option value="closed">Sort: Tickets closed</option><option value="name">Sort: Name</option></select><select data-r="fb" aria-label="Filter by review %"><option value="">Filter: all franchises</option><option value="75">Review % 75 and above</option><option value="50">Review % 50 and above</option><option value="25">Review % 25 and above</option><option value="low">Review % below 25</option><option value="none">No reviews yet</option></select></div><div data-r="fl"></div></section>
 <section data-r="dv" hidden><button class="bk" data-r="bk">‹ All franchises</button><div class="tools"><div class="seg" data-r="seg"></div><input data-r="tq" type="search" placeholder="Search technician" aria-label="Search technician"><select data-r="ts" aria-label="Filter by slab"><option value="">Filter: all slabs</option><option value="0">No slab yet</option><option value="25">25% slab</option><option value="50">50% slab</option><option value="75">75% slab</option><option value="100">100% slab</option></select></div><div class="tl" data-r="tl"></div></section>`;
   const FV = f => all ? {
@@ -217,10 +237,11 @@ function mountDash(root, mode) {
     $$("ts").value = "";
     $$("ov").hidden = !!code;
     $$("dv").hidden = !code;
-    const t = R.totals;
+    const t = D.totals;
     if (!code) {
       $$("scope").textContent = all ? "If all " + t.reviewTickets +
-        " uploaded tickets are accepted – all franchises" : "All franchises";
+        " uploaded tickets are accepted – all franchises" : rulesOnly ?
+        "Dashboard based on new rules – all franchises" : "All franchises";
       kpis($$("kp"), all ? [
         [t.reviewTickets, "Uploaded tickets accepted"],
         [t.aPct, "Review %", "pct"],
@@ -232,10 +253,10 @@ function mountDash(root, mode) {
         [t.pct, "Review %", "pct"],
         [t.earn, "Estimated technician earnings", "inr"]
       ]);
-      if (!all) summary($$("ks"), t.reviewTickets, t.reviews, R.rejected.length);
+      if (!all) summary($$("ks"), t.reviewTickets, t.reviews, D.rejected.length);
       ov()
     } else {
-      const f = R.franchises.find(x => x.code === code);
+      const f = D.franchises.find(x => x.code === code);
       $$("scope").textContent = f.name;
       kpis($$("kp"), all ? [
         [f.aReviews, "Reviews if all accepted"],
@@ -260,7 +281,7 @@ function mountDash(root, mode) {
   function ov() {
     const q = $$("q").value.trim().toLowerCase(),
       b = BAND[$$("fb").value];
-    const l = R.franchises.filter(f => vis(f) && b(f) && (!q || (f.name + " " + f.code).toLowerCase().includes(q)))
+    const l = D.franchises.filter(f => vis(f) && b(f) && (!q || (f.name + " " + f.code).toLowerCase().includes(q)))
       .sort(SORT[$$("so").value]);
     $$("fl").innerHTML = l.length ? l.map((f, i) => {
       const v = FV(f);
@@ -287,7 +308,7 @@ function mountDash(root, mode) {
   }
 
   function det() {
-    const f = R.franchises.find(x => x.code === fsel),
+    const f = D.franchises.find(x => x.code === fsel),
       q = $$("tq").value.trim().toLowerCase(),
       sf = $$("ts").value;
     seg($$("seg"), [
@@ -466,6 +487,25 @@ function mountRej(root) {
   }
 }
 
+function mountInsights(root) {
+  root.innerHTML = `
+    <p class="scope">Rejection insights</p>
+    <p class="note">Chennai + ROTN findings from the June–October 2026 audit (1,659 rejected tickets with a recorded reason).</p>
+    <div class="insight-grid">
+      <article class="insight-card"><span class="insight-stat">26.6% · 441 tickets</span><h3>Delivery rating, not product rating</h3><p>Guide customers to the product page and its product-review option, rather than the delivery or seller feedback prompt.</p></article>
+      <article class="insight-card"><span class="insight-stat">17.2% · 286 tickets</span><h3>Order invoice missing</h3><p>Require two distinct uploads: the order-details page showing the Order ID and product, plus the rating and review page.</p></article>
+      <article class="insight-card"><span class="insight-stat">15.4% · 256 tickets</span><h3>Order ID does not match the bill</h3><p>Copy the ID from the order-details screen and verify it against the bill. Do not append an extra “-1” to Amazon IDs.</p></article>
+      <article class="insight-card"><span class="insight-stat">14.5% · 240 tickets</span><h3>Rating proof missing or incomplete</h3><p>Upload the page showing the stars and written review—not only the “Thank you” confirmation. Check the image before submitting.</p></article>
+      <article class="insight-card"><span class="insight-stat">10.2% · 170 tickets</span><h3>Seller rating, not product rating</h3><p>Ask the customer to rate the product itself and capture that product-review screen.</p></article>
+      <article class="insight-card insight-callout"><span class="insight-stat">Operational check</span><h3>Confirm e-commerce tickets are in CRM</h3><p>For installation tickets missing from CRM, check orders before the visit and escalate missing records to the e-commerce team. The workbook notes these are generally not the technician’s fault.</p></article>
+    </div>
+    <div class="insight-note"><b>Audit context:</b> Across all branches, an Order ID mismatch was the largest reason (5,482; 30.5% of recorded rejections), and the top three proof-upload issues made up about 66%. The all-branch “missing rating screenshot / thank-you” reason rose to 1,558 tickets in October. Chennai + ROTN’s five leading reasons above account for about 84% of its recorded rejections.</div>
+    <p class="note">Source: Rating_Rejection_Analysis.xlsx. Reason percentages and counts are from the workbook’s grouped audit findings; they are not recalculated from the current month’s dashboard data.</p>`;
+  return {
+    open() {}
+  }
+}
+
 /* ============ Excel download of selected subsections ============ */
 function dlItems() {
   const all = R.rejected,
@@ -586,11 +626,6 @@ function tab(k) {
   })
 }
 fetch("report.json?v=" + Date.now()).then(r => r.json()).then(j => {
-  if (j.version !== 3) {
-    $("repnote").textContent =
-      "The report file is in an old format. Please create report.json again from the admin page.";
-    return
-  }
   R = j;
   $("asof").textContent = j.asof;
   const t = j.totals;
@@ -604,11 +639,15 @@ fetch("report.json?v=" + Date.now()).then(r => r.json()).then(j => {
       " in " + mo : "") + " only" + (t.skipped ? " · " + t.skipped +
       " closed tickets of other products (IND, KF etc.) not counted" : "") + ".";
   P.main = mountDash($("pg-main"), "main");
+  P.new = mountDash($("pg-new"), "new", j.newRules || j.nr || j);
   P.rej = mountRej($("pg-rej"));
+  P.insights = mountInsights($("pg-insights"));
   P.all = mountDash($("pg-all"), "all");
   const T = [
     ["main", "Review dashboard"],
+    ["new", "Dashboard based on new rules"],
     ["rej", "Rejected tickets", j.rejected.length],
+    ["insights", "Rejection insights"],
     ["all", "If all " + t.reviewTickets + " accepted"]
   ];
   $("tabs").innerHTML = T.map(([k, l, n]) =>

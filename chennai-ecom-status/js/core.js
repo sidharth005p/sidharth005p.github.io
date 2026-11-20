@@ -47,6 +47,7 @@ function getCore()
   const NEED = ["frcode", "franchise name", "ticket no", "call type", "product", "status", "dealer name", "orgin", "technician name"];
   /* ---- reasons a review ticket is not counted ---- */
   const REASONS = {
+    OLD: "Installation call registered before the accepted months (this month and last month only)",
     NF: "Not in the calls file (booked before the file's dates, or not found at all)",
     CANC: "Installation call was Cancelled",
     DEALER: "Closed / soft closure, but dealer is not Flipkart India / Cloudtail India",
@@ -54,7 +55,16 @@ function getCore()
     STAT: "Status is not Closed / Soft closure",
     PROD: "Product not counted (IND, KF, other)"
   };
-  const REASON_ORDER = [REASONS.CANC, REASONS.DEALER, REASONS.STAT, REASONS.TYPE, REASONS.PROD, REASONS.NF];
+  const REASON_ORDER = [REASONS.OLD, REASONS.CANC, REASONS.DEALER, REASONS.STAT, REASONS.TYPE, REASONS.PROD, REASONS.NF];
+  const prevMonth = m => {
+    let y = +m.slice(0, 4),
+      n = +m.slice(5, 7) - 1;
+    if (n < 1) {
+      n = 12;
+      y--
+    }
+    return y + "-" + String(n).padStart(2, "0")
+  };
 
   function stat(c, closed, reviews, wrong) {
     const pct = closed ? reviews / closed * 100 : (reviews ? 100 : 0),
@@ -174,6 +184,10 @@ function getCore()
     const used = {},
       first = {};
     const mon = opts.month || "";
+    /* NEW RULES: opts.callMonths = months (YYYY-MM) in which the e-com installation call must have been registered (report month + month before).
+       A review ticket whose matching closed installation call is from an older month is NOT accepted. The upload date of the review does not matter. */
+    const cm = opts.callMonths || null,
+      old = {};
     const reviewTickets = Object.keys(rev).length;
     const inFile = {};
     let exProd = 0,
@@ -184,13 +198,15 @@ function getCore()
     rows.forEach(r => {
       const [fc, fn, tk, ct, pr, st, dl, og, tn] = r;
       const t = String(tk).trim();
-      const isRev = !!rev[t];
-      if (isRev) {
+      const known = !!rev[t];
+      if (known) {
         inFile[t] = 1;
-        if (!first[t]) first[t] = r
+        if (!first[t] || (!isE(first[t]) && isE(r))) first[t] = r
       }
       if (!isE(r) || seen[t]) return;
       seen[t] = 1;
+      const isRev = known && (!cm || cm.indexOf(r[9]) >= 0);
+      if (known && !isRev) old[t] = 1;
       const inM = !mon || r[9] === mon;
       if (!inM && !isRev) return;
       const c = catOf(pr);
@@ -349,18 +365,22 @@ function getCore()
       ct: r ? String(r[3]) : "",
       cb: r ? (r[10] || "") : ""
     });
+    const MNs = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      mlab = m => MNs[+m.slice(5, 7) - 1] + " " + m.slice(0, 4);
     const rejected = Object.keys(rev).filter(t => !used[t]).map(t => {
-      const r = first[t],
-        w = why(r);
+      const r = first[t];
+      let w = why(r);
+      if (old[t] && w[0] === "Not counted") w = [REASONS.OLD, "Call registered " + (r[10] || r[9] || "?") + " · accepted only " + cm.slice().reverse().map(mlab).join(" and ")];
       return Object.assign(info(t, r), {
         why: w[0],
         note: w[1]
       })
     });
     const unmatched = rejected.length,
-      notFound = rejected.filter(x => x.why === REASONS.NF).length;
+      notFound = rejected.filter(x => x.why === REASONS.NF).length,
+      stale = rejected.filter(x => x.why === REASONS.OLD).length;
     return {
-      version: 3,
+      version: 4,
       range: opts.range || "",
       asof: opts.asof || "",
       from: opts.from || "",
@@ -378,14 +398,30 @@ function getCore()
         earn,
         pct: pc(reviews, closed),
         unattr,
+        stale,
         aReviews,
         aPct: pc(aReviews, closed),
         aEarn,
         gain: aEarn - earn
       },
       franchises: fr,
-      rejected
+      rejected,
+      window: cm ? {
+        months: cm,
+        basis: "call"
+      } : null
     }
+  }
+  /* Current rules report + the same report under the NEW RULES in .nr (accepted only if the matching closed e-com installation call was registered in the report month or the month before).
+     The "if all uploaded tickets were accepted" figures (aReviews, aEarn, gain) of .nr are measured against the new rules. */
+  function buildBoth(rows, rev, opts) {
+    opts = opts || {};
+    const rep = buildReport(rows, rev, opts),
+      m = opts.month || String(opts.asof || "").slice(0, 7);
+    if (m && rows.some(r => r[9])) rep.nr = buildReport(rows, rev, Object.assign({}, opts, {
+      callMonths: [m, prevMonth(m)]
+    }));
+    return rep
   }
   /* Flat Excel rows: one row per technician per category. withAll = also add the "if all uploaded tickets are accepted" columns */
   function techRows(f, only, withAll) {
@@ -434,8 +470,10 @@ function getCore()
     nextOf,
     rateOf,
     stat,
+    prevMonth,
     pickCalls,
     buildReport,
+    buildBoth,
     techRows
   };
 

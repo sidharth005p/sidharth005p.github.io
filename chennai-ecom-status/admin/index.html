@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -228,12 +229,14 @@
 <body>
     <main>
         <h1>Admin – update the data (Chennai &amp; ROTN)</h1>
-        <p class="s">Version 15 · For the branch only. Nothing is uploaded anywhere: the Excel file is read inside your
+        <p class="s">Version 17 · For the branch only. Nothing is uploaded anywhere: the Excel file is read inside your
             browser.</p>
         <div class="card"><b>1. Choose the new daily Excel file</b>
             <p class="note">Columns needed: Branch, Ticket ID, Added Time. Only Chennai and ROTN rows are used. The file
-                may hold several months (e.g. from 19 May till today); a ticket from any of those months counts as a
-                review. Only the current month forms the denominator.</p>
+                may hold several months (e.g. from 19 May till today); under the current rules a ticket matching a
+                closed e-com installation call of any month counts as a review; under the new rules the matching call
+                must have been registered this month or last month (e.g. November and October). Only the current month
+                forms the denominator.</p>
             <input type="file" id="file" accept=".xlsx,.xls,.csv">
             <div id="msg" class="msg"></div>
             <div class="dl" id="btns" style="margin-top:10px" hidden><button id="dj">2. Download data.json</button>
@@ -254,14 +257,23 @@
                     report.json</button><button id="dxs" class="alt">Download technician slab report
                     (Excel)</button><button id="dun" class="alt">Download rejected tickets (Excel)</button></div>
         </div>
+        <div class="card"><b>Rejection analysis (optional)</b>
+            <p class="note">Choose the <i>Rating_Rejection_Analysis.xlsx</i> file to refresh the “Rejection insights”
+                section of the website. It is read inside your browser.</p><input type="file" id="afile"
+                accept=".xlsx,.xls">
+            <div id="amsg" class="msg"></div>
+            <div class="dl" id="abtns" style="margin-top:10px" hidden><button id="da">Download analysis.json</button>
+            </div>
+        </div>
         <div class="card"><b>3. Publish</b>
             <p class="note">On GitHub open your repository → click <i>data.json</i> → pencil/“Upload files” → replace it
-                (and report.json, if you made one) with the files you just downloaded → <i>Commit changes</i>. The
-                website updates within about a minute.</p>
+                (and report.json and analysis.json, if you made them) with the files you just downloaded → <i>Commit
+                    changes</i>. The website updates within about a minute.</p>
         </div>
     </main>
-    <script src="../js/core.js?v=14"></script>
-    <script src="../js/admin.js?v=14"></script>
+    <script src="../js/core.js?v=17"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/admin.js?v=17"></script>
 </body>
+
 </html>

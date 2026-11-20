@@ -45,12 +45,16 @@ function parse(buf) {
     list.sort((a, b) => a.d.localeCompare(b.d));
     const t = {};
     list.forEach(r => {
-        if (t[r.t]) return;
+        if (t[r.t]) {
+            t[r.t].l = r.d.slice(0, 10);
+            return
+        }
         t[r.t] = {
             d: r.d.slice(0, 10),
-            b: r.b
+            b: r.b,
+            l: r.d.slice(0, 10)
         }
-    });
+    }); /* d = first upload, l = latest upload */
     return {
         asof: list[list.length - 1].d,
         from: list[0].d.slice(0, 10),
@@ -91,7 +95,7 @@ $("dj").onclick = () => save("data.json", new Blob([JSON.stringify({
     asof: nd.asof,
     from: nd.from,
     t: nd.t
-}, null, 4)], {
+})], {
     type: "application/json"
 }));
 
@@ -116,7 +120,7 @@ async function makeReport() {
             from = d.from || ""
         }
         const month = calls.dateOk ? $("mon").value : "";
-        rep = CORE.buildReport(calls.rows, t, {
+        rep = CORE.buildBoth(calls.rows, t, {
             range: calls.range,
             asof,
             from,
@@ -133,6 +137,15 @@ async function makeReport() {
             " → review % " + T.pct + "%. Estimated technician earnings ₹" + T.earn + "; if all " + nrev +
             " uploaded tickets were accepted: ₹" + T.aEarn + " (+₹" + T.gain + "). " + (calls.dateOk ? "" :
                 "WARNING: no call-date column was found in the calls file, so every row of the file is counted as one month. "
+                ) + (rep.nr ?
+                " NEW RULES (a review is accepted only if its Flipkart / Cloudtail installation call was registered in " +
+                rep.nr.window.months.slice().reverse().map(mname).join(" and ") + "): accepted " + rep.nr
+                .totals.reviews + ", rejected " + rep.nr.rejected.length + " (of which " + rep.nr.totals
+                .stale + " because the call is from an earlier month), review % " + rep.nr.totals.pct +
+                "%, estimated earnings ₹" + rep.nr.totals.earn +
+                "; if all uploaded tickets were accepted: ₹" + rep.nr.totals.aEarn + " (+₹" + rep.nr.totals
+                .gain + "). " :
+                " WARNING: the new-rules report was not built because the calls file has no call-date column. "
                 ) + (nd ? "Using the review file chosen above." :
                 "Using the review data currently on the website (till " + asof + ").");
         $("cbtns").hidden = false
@@ -245,9 +258,52 @@ $("dun").onclick = () => {
         ["All tickets", rep.rejected.map(X)]
     ]), "Rejected_Review_Tickets.xlsx")
 };
+let ana = null;
+$("afile").onchange = async e => {
+    const fl = e.target.files[0],
+        m = $("amsg");
+    ana = null;
+    $("abtns").hidden = true;
+    m.textContent = "";
+    if (!fl) return;
+    try {
+        const wb = XLSX.read(await fl.arrayBuffer(), {
+                type: "array"
+            }),
+            sheets = {};
+        wb.SheetNames.forEach(n => {
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], {
+                header: 1,
+                raw: true,
+                defval: ""
+            }).map(r => {
+                r = r.map(c => typeof c === "number" ? Math.round(c * 1e6) / 1e6 : c);
+                while (r.length && r[r.length - 1] === "") r.pop();
+                return r
+            });
+            while (rows.length && !rows[rows.length - 1].length) rows.pop();
+            sheets[n] = rows
+        });
+        if (!sheets["Summary"]) throw new Error(
+            "This does not look like the Rating_Rejection_Analysis file (no Summary sheet).");
+        ana = {
+            file: fl.name,
+            sheets
+        };
+        m.className = "msg g";
+        m.textContent = "Read " + wb.SheetNames.length + " sheets: " + wb.SheetNames.join(", ") + ".";
+        $("abtns").hidden = false
+    } catch (err) {
+        m.className = "msg e";
+        m.textContent = err.message || "Could not read the file."
+    }
+};
+$("da").onclick = () => save("analysis.json", new Blob([JSON.stringify(ana)], {
+    type: "application/json"
+}));
 $("soft").onchange = makeReport;
 $("file").addEventListener("change", () => setTimeout(makeReport, 300));
-$("dr").onclick = () => save("report.json", new Blob([JSON.stringify(rep, null, 4)], {
+$("dr").onclick = () => save("report.json", new Blob([JSON.stringify(rep)], {
     type: "application/json"
 }));
 $("dxs").onclick = () => {
