@@ -605,7 +605,14 @@ function mountProjectedLoss(root) {
     (sheets["Chennai-ROTN franchises"] || []).slice(4).forEach(r => {
       if (r && r[1]) franchiseHistory.set(normalizeName(r[1]), r);
     });
-    const externalReasonShare = (1659 - 110) / 1659;
+    const monthly = (sheets["Rejection rate by month"] || []).slice(4).filter(r => r && r.length >= 10);
+    const october = monthly.find(r => ["oct", "october"].includes(String(r[0]).toLowerCase()));
+    const octoberRates = {
+      Chennai: october ? october[6] * 100 : 45.2768729,
+      ROTN: october ? october[9] * 100 : 38.9527458,
+      All: october ? october[3] * 100 : 43.3185967
+    };
+    const nearest100 = value => Math.round((value || 0) / 100) * 100;
     const currentFranchises = (R && R.franchises ? R.franchises : []).slice();
 
     function categorySlabLoss(cats, projectedRejected) {
@@ -613,6 +620,7 @@ function mountProjectedLoss(root) {
       const totalClosed = names.reduce((sum, c) => sum + (cats[c] ? cats[c].closed || 0 : 0), 0);
       let allocated = 0;
       let loss = 0;
+      let remainingEarn = 0;
       names.forEach((c, i) => {
         const cat = cats[c];
         if (!cat) return;
@@ -627,10 +635,14 @@ function mountProjectedLoss(root) {
         const remainingPct = categoryClosed ? remainingReviews / categoryClosed * 100 : (remainingReviews ? 100 : 0);
         const slab = CORE.slabOf(remainingPct);
         const rate = CORE.rateOf(c, slab);
-        const remainingEarn = rate * remainingReviews;
-        loss += Math.max(0, currentEarn - remainingEarn);
+        const categoryRemainingEarn = rate * remainingReviews;
+        remainingEarn += categoryRemainingEarn;
+        loss += Math.max(0, currentEarn - categoryRemainingEarn);
       });
-      return loss;
+      return {
+        loss,
+        remainingEarn
+      };
     }
 
     function aggregateFranchiseCategories(f) {
@@ -651,26 +663,31 @@ function mountProjectedLoss(root) {
 
     const franchiseRows = currentFranchises.map(f => {
       const historical = franchiseHistory.get(normalizeName(f.name));
-      const rejectionPct = historical ? historical[4] * 100 : null;
-      const projectedRejected = rejectionPct == null ? 0 : Math.round(f.closed * rejectionPct / 100 * externalReasonShare);
+      const branch = historical && String(historical[0]).toLowerCase().startsWith("rotn") ? "ROTN" : "Chennai";
+      const rejectionPct = octoberRates[branch];
+      const projectedRejected = rejectionPct == null ? 0 : Math.round(f.closed * rejectionPct / 100);
       const earnings = f.earn || 0;
-      const slabLoss = categorySlabLoss(aggregateFranchiseCategories(f), projectedRejected);
+      const earningsAfterLoss = nearest100(earnings * (1 - rejectionPct / 100));
+      const slabLoss = nearest100(Math.max(0, earnings - earningsAfterLoss));
       return {
         name: f.name,
         code: f.code,
+        branch,
         rejectionPct,
         closed: f.closed || 0,
         projectedRejected,
         earnings,
+        earningsAfterLoss,
         loss: slabLoss
       };
     }).sort((a, b) => b.loss - a.loss);
 
     const technicianRows = currentFranchises.flatMap(f => {
       const historical = franchiseHistory.get(normalizeName(f.name));
-      const rejectionPct = historical ? historical[4] * 100 : null;
+      const branch = historical && String(historical[0]).toLowerCase().startsWith("rotn") ? "ROTN" : "Chennai";
+      const rejectionPct = octoberRates[branch];
       return (f.techs || []).map(t => {
-        const projectedRejected = rejectionPct == null ? 0 : Math.round((t.closed || 0) * rejectionPct / 100 * externalReasonShare);
+        const projectedRejected = rejectionPct == null ? 0 : Math.round((t.closed || 0) * rejectionPct / 100);
         const earnings = t.earn || 0;
         const cats = {
           C1: t.cats && t.cats.C1 ? {
@@ -684,19 +701,45 @@ function mountProjectedLoss(root) {
             earn: t.cats.C2.earn || 0
           } : null
         };
+        const earningsAfterLoss = nearest100(earnings * (1 - rejectionPct / 100));
+        const slabLoss = nearest100(Math.max(0, earnings - earningsAfterLoss));
         return {
           name: t.name,
           franchise: f.name,
+          branch,
+          rejectionPct,
           projectedRejected,
           earnings,
-          loss: categorySlabLoss(cats, projectedRejected)
+          earningsAfterLoss,
+          loss: slabLoss
         };
       });
     }).sort((a, b) => b.loss - a.loss);
 
+    const projectedLossTotal = nearest100(franchiseRows.reduce((sum, r) => sum + r.loss, 0));
+    const projectedEarningsAfterLoss = nearest100(franchiseRows.reduce((sum, r) => sum + r.earningsAfterLoss, 0));
+    const currentTotals = R && R.totals ? R.totals : {};
+
     root.innerHTML = `
       <p class="scope">Projected loss based on rejection rate</p>
-      <p class="note">Base: 330 accepted tickets out of 509 uploaded, earning ₹80,050. Projected rejected tickets are allocated across Category 1 and Category 2. The loss is the sum of current slab earnings minus the recalculated earnings after those rejected reviews are removed. It excludes the dashboard’s 179 unmatched tickets and the 110 CRM-not-registered process tickets.</p>
+      <p class="note">Projection uses the October 2026 Chennai and ROTN rejection rates only, not the multi-month average. Formula: <b>earnings after loss = earnings now × (1 − rejection %)</b>, rounded to the nearest ₹100; <b>projected loss = earnings now − earnings after loss</b>, also rounded to the nearest ₹100.</p>
+
+      <section class="kpis insight-kpis">
+        <div class="k"><b>${(currentTotals.closed || 0).toLocaleString("en-IN")}</b><span>E-com installations closed</span></div>
+        <div class="k"><b>${(currentTotals.reviews || 0).toLocaleString("en-IN")}</b><span>Accepted reviews</span></div>
+        <div class="k"><b>${currentTotals.pct || 0}%</b><span>Review %</span></div>
+        <div class="k"><b>${inr(currentTotals.earn || 0)}</b><span>Estimated technician earnings</span></div>
+      </section>
+      <section class="kpis insight-kpis">
+        <div class="k"><b>${(currentTotals.reviewTickets || 0).toLocaleString("en-IN")}</b><span>Review tickets uploaded</span></div>
+        <div class="k"><b>${(currentTotals.reviews || 0).toLocaleString("en-IN")}</b><span>Accepted (counted as reviews)</span></div>
+        <div class="k"><b>${(currentTotals.unmatched || 0).toLocaleString("en-IN")}</b><span>Rejected / not counted</span></div>
+      </section>
+      <section class="kpis insight-kpis">
+        <div class="k"><b>${inr(projectedLossTotal)}</b><span>Projected earnings loss</span></div>
+        <div class="k"><b>${inr(projectedEarningsAfterLoss)}</b><span>Projected earnings after loss</span></div>
+      </section>
+      <div class="insight-note"><b>Advisory:</b> This loss calculation is based strictly on the October 2026 rejection rate. The projected loss may be lower if rating-submission rejections are reduced.</div>
 
       <section class="insight-section">
         <h3>Projected loss by franchise</h3>
@@ -711,19 +754,19 @@ function mountProjectedLoss(root) {
     const draw = () => {
       ftable(root.querySelector("#projected-franchise-table"), "projected-franchise", [
         ["Franchise", "name", r => `<strong>${esc(r.name)}</strong><br><small>${esc(r.code)}</small>`],
-        ["Analysis rejection %", "rejectionPct", r => r.rejectionPct == null ? "—" : r.rejectionPct.toFixed(1) + "%"],
+        ["October rejection %", "rejectionPct", r => r.rejectionPct == null ? "—" : r.rejectionPct.toFixed(1) + "%"],
         ["Current closed tickets", "closed", r => r.closed.toLocaleString("en-IN")],
-        ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
         ["Earnings now", "earnings", r => inr(r.earnings)],
-        ["Projected slab earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+        ["Earnings after projected loss", "earningsAfterLoss", r => inr(r.earningsAfterLoss)],
+        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
       ], franchiseRows, draw);
 
       ftable(root.querySelector("#projected-technician-table"), "projected-technician", [
         ["Technician", "name", r => `<strong>${esc(r.name)}</strong>`],
         ["Franchise", "franchise"],
-        ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
         ["Earnings now", "earnings", r => inr(r.earnings)],
-        ["Projected slab earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+        ["Earnings after projected loss", "earningsAfterLoss", r => inr(r.earningsAfterLoss)],
+        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
       ], technicianRows, draw);
     };
     draw();
