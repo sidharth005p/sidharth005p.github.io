@@ -652,14 +652,17 @@ function mountProjectedLoss(root) {
       const historical = franchiseHistory.get(normalizeName(f.name));
       const rejectionPct = historical ? historical[4] * 100 : null;
       const projectedRejected = rejectionPct == null ? 0 : Math.round(f.closed * rejectionPct / 100 * externalReasonShare);
+      const trendFactor = rejectionPct == null ? 0 : rejectionPct / 100 * externalReasonShare;
+      const earnings = f.earn || 0;
+      const slabLoss = categoryLoss(aggregateFranchiseCategories(f), projectedRejected);
       return {
         name: f.name,
         code: f.code,
         rejectionPct,
         closed: f.closed || 0,
         projectedRejected,
-        earnings: f.earn || 0,
-        loss: categoryLoss(aggregateFranchiseCategories(f), projectedRejected)
+        earnings,
+        loss: Math.round(Math.min(earnings * trendFactor, slabLoss))
       };
     }).sort((a, b) => b.loss - a.loss);
 
@@ -668,6 +671,8 @@ function mountProjectedLoss(root) {
       const rejectionPct = historical ? historical[4] * 100 : null;
       return (f.techs || []).map(t => {
         const projectedRejected = rejectionPct == null ? 0 : Math.round((t.closed || 0) * rejectionPct / 100 * externalReasonShare);
+        const trendFactor = rejectionPct == null ? 0 : rejectionPct / 100 * externalReasonShare;
+        const earnings = t.earn || 0;
         const cats = {
           C1: t.cats && t.cats.C1 ? {
             closed: t.cats.C1.closed || 0,
@@ -684,15 +689,15 @@ function mountProjectedLoss(root) {
           name: t.name,
           franchise: f.name,
           projectedRejected,
-          earnings: t.earn || 0,
-          loss: categoryLoss(cats, projectedRejected)
+          earnings,
+          loss: Math.round(Math.min(earnings * trendFactor, categoryLoss(cats, projectedRejected)))
         };
       });
     }).sort((a, b) => b.loss - a.loss);
 
     root.innerHTML = `
       <p class="scope">Projected loss based on rejection rate</p>
-      <p class="note">Base: 330 accepted tickets out of 509 uploaded, earning ₹80,050. This projection excludes the dashboard’s 179 unmatched tickets and the 110 CRM-not-registered process tickets. Loss is recalculated using Category 1 / Category 2 current closed-ticket counts and the 25%, 50%, 75% or 100% slab rate.</p>
+      <p class="note">Base: 330 accepted tickets out of 509 uploaded, earning ₹80,050. The projected loss is the current earnings × the franchise rejection trend × the other-rejection share, capped by the Category 1 / Category 2 slab calculation. It excludes the dashboard’s 179 unmatched tickets and the 110 CRM-not-registered process tickets.</p>
 
       <section class="insight-section">
         <h3>Projected loss by franchise</h3>
@@ -711,7 +716,7 @@ function mountProjectedLoss(root) {
         ["Current closed tickets", "closed", r => r.closed.toLocaleString("en-IN")],
         ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
         ["Earnings now", "earnings", r => inr(r.earnings)],
-        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+        ["Projected loss from current earnings", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
       ], franchiseRows, draw);
 
       ftable(root.querySelector("#projected-technician-table"), "projected-technician", [
@@ -719,7 +724,7 @@ function mountProjectedLoss(root) {
         ["Franchise", "franchise"],
         ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
         ["Earnings now", "earnings", r => inr(r.earnings)],
-        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+        ["Projected loss from current earnings", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
       ], technicianRows, draw);
     };
     draw();
