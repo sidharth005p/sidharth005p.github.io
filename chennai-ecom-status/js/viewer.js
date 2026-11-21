@@ -488,19 +488,106 @@ function mountRej(root) {
 }
 
 function mountInsights(root) {
-  root.innerHTML = `
-    <p class="scope">Rejection insights</p>
-    <p class="note">Chennai + ROTN findings from the June–October 2026 audit (1,659 rejected tickets with a recorded reason).</p>
-    <div class="insight-grid">
-      <article class="insight-card"><span class="insight-stat">26.6% · 441 tickets</span><h3>Delivery rating, not product rating</h3><p>Guide customers to the product page and its product-review option, rather than the delivery or seller feedback prompt.</p></article>
-      <article class="insight-card"><span class="insight-stat">17.2% · 286 tickets</span><h3>Order invoice missing</h3><p>Require two distinct uploads: the order-details page showing the Order ID and product, plus the rating and review page.</p></article>
-      <article class="insight-card"><span class="insight-stat">15.4% · 256 tickets</span><h3>Order ID does not match the bill</h3><p>Copy the ID from the order-details screen and verify it against the bill. Do not append an extra “-1” to Amazon IDs.</p></article>
-      <article class="insight-card"><span class="insight-stat">14.5% · 240 tickets</span><h3>Rating proof missing or incomplete</h3><p>Upload the page showing the stars and written review—not only the “Thank you” confirmation. Check the image before submitting.</p></article>
-      <article class="insight-card"><span class="insight-stat">10.2% · 170 tickets</span><h3>Seller rating, not product rating</h3><p>Ask the customer to rate the product itself and capture that product-review screen.</p></article>
-      <article class="insight-card insight-callout"><span class="insight-stat">Operational check</span><h3>Confirm e-commerce tickets are in CRM</h3><p>For installation tickets missing from CRM, check orders before the visit and escalate missing records to the e-commerce team. The workbook notes these are generally not the technician’s fault.</p></article>
-    </div>
-    <div class="insight-note"><b>Audit context:</b> Across all branches, an Order ID mismatch was the largest reason (5,482; 30.5% of recorded rejections), and the top three proof-upload issues made up about 66%. The all-branch “missing rating screenshot / thank-you” reason rose to 1,558 tickets in October. Chennai + ROTN’s five leading reasons above account for about 84% of its recorded rejections.</div>
-    <p class="note">Source: Rating_Rejection_Analysis.xlsx. Reason percentages and counts are from the workbook’s grouped audit findings; they are not recalculated from the current month’s dashboard data.</p>`;
+  root.innerHTML = `<p class="scope">Rejection insights</p><p class="note">Loading rejection analysis…</p>`;
+
+  function draw(data) {
+    const sheets = data.sheets || {};
+    const reasons = (sheets["Top 10 - Chennai + ROTN"] || []).slice(4).filter(r => r && r.length >= 7);
+    const reasonRows = reasons.filter(r => /^\d+$/.test(String(r[0]))).map(r => ({
+      rank: r[0],
+      name: r[1],
+      count: r[3],
+      pct: r[4] * 100,
+      action: r[6]
+    }));
+    const monthly = ((sheets["Rejection rate by month"] || []).slice(4).filter(r => r && r.length >= 8));
+    const platform = ((sheets["By platform"] || []).slice(-2).filter(r => r && r[0] === "Amazon (Cloudtail)" || r && r[0] === "Flipkart"));
+    const franchises = (sheets["Chennai-ROTN franchises"] || []).slice(4).filter(r => r && r.length >= 7).slice(0, 10);
+    const topActions = reasonRows.slice(0, 5);
+    const barWidth = pct => Math.max(4, Math.min(100, pct));
+
+    root.innerHTML = `
+      <p class="scope">Rejection insights</p>
+      <p class="note">Rating rejection analysis · Chennai &amp; ROTN · May–October 2026</p>
+      <section class="kpis insight-kpis">
+        <div class="k"><b>5,170</b><span>reviews submitted</span></div>
+        <div class="k"><b>1,924</b><span>rejected</span></div>
+        <div class="k"><b>37.2%</b><span>combined rejected %</span></div>
+        <div class="k"><b>1,659</b><span>tickets with a recorded reason</span></div>
+      </section>
+
+      <div class="insight-grid three">
+        <article class="insight-card"><span class="insight-stat">631 tickets · 38%</span><h3>Customer rates the wrong thing</h3><p>Delivery, seller or service rating instead of the product rating.</p></article>
+        <article class="insight-card"><span class="insight-stat">893 tickets · 53.8%</span><h3>Proof upload mistakes</h3><p>Bill copy or rating screenshot missing or unclear, or the Order ID typed incorrectly.</p></article>
+        <article class="insight-card"><span class="insight-stat">133 tickets · 8%</span><h3>Process issues</h3><p>Ticket not registered in CRM, or registered in an earlier month.</p></article>
+      </div>
+
+      <section class="insight-section">
+        <h3>Top five reasons · 84% of recorded rejections</h3>
+        <div class="reason-list">
+          ${topActions.map(r => `
+            <article class="reason-row">
+              <div class="reason-rank">#${r.rank}</div>
+              <div class="reason-name"><strong>${esc(r.name)}</strong><span>${r.count.toLocaleString("en-IN")} tickets</span></div>
+              <div class="reason-pct">${r.pct.toFixed(1)}%</div>
+              <div class="reason-bar"><i style="width:${barWidth(r.pct)}%"></i></div>
+            </article>`).join("")}
+        </div>
+      </section>
+
+      <section class="insight-section">
+        <h3>How to stop the top five reasons</h3>
+        <div class="tw"><table class="action-table"><thead><tr><th>#</th><th>Reason</th><th>Tickets</th><th>What to do</th></tr></thead><tbody>
+          ${topActions.map(r => `<tr><td>${r.rank}</td><td>${esc(r.name)}</td><td>${r.count.toLocaleString("en-IN")} (${r.pct.toFixed(1)}%)</td><td>${esc(r.action)}</td></tr>`).join("")}
+        </tbody></table></div>
+      </section>
+
+      <section class="insight-section">
+        <h3>Rejected share by month</h3>
+        <div class="trend-table">
+          ${monthly.map(r => `
+            <article class="trend-row">
+              <strong>${esc(r[0])}</strong>
+              <div class="trend-cell"><span>${(r[3] * 100).toFixed(1)}% All</span><div class="trend-bar"><i style="width:${barWidth(r[3] * 100)}%"></i></div></div>
+              <div class="trend-cell"><span>${(r[6] * 100).toFixed(1)}% Chennai</span><div class="trend-bar"><i style="width:${barWidth(r[6] * 100)}%"></i></div></div>
+              <div class="trend-cell"><span>${(r[9] * 100).toFixed(1)}% ROTN</span><div class="trend-bar"><i style="width:${barWidth(r[9] * 100)}%"></i></div></div>
+            </article>`).join("")}
+        </div>
+        <p class="insight-note"><b>Trend:</b> Chennai peaked at 45.3% in October after rising for three months. ROTN eased to 39.0% in October.</p>
+      </section>
+
+      <section class="insight-section">
+        <h3>Platform impact</h3>
+        <div class="platform-compare">
+          ${platform.map(r => `<article class="insight-card"><span class="insight-stat">${esc(r[0])}</span><b>${(r[3] * 100).toFixed(1)}%</b><p>${r[2].toLocaleString("en-IN")} rejected of ${r[1].toLocaleString("en-IN")} submitted</p></article>`).join("")}
+        </div>
+      </section>
+
+      <section class="insight-section">
+        <h3>Franchises to coach first</h3>
+        <div class="coach-list">
+          <div class="coach-head"><span>Franchise</span><span>Submitted</span><span>Rejected %</span><span>Main rejection reason</span></div>
+          ${franchises.filter(r => r[3] >= 20 && !/^manivannan\s*s/i.test(String(r[1])) && !/^raja\s*m/i.test(String(r[1]))).slice(0, 5).map(r => `
+            <article class="coach-row">
+              <strong>${esc(r[1])} · ${esc(r[0])}</strong>
+              <span>${r[2]} submitted</span>
+              <span class="trend-pct">${(r[4] * 100).toFixed(1)}%</span>
+              <span>${esc(r[5])} (${r[6]} tickets)</span>
+            </article>`).join("")}
+        </div>
+        <p class="note">Franchises with at least 20 submissions, June–October 2026.</p>
+      </section>
+
+      <div class="insight-note"><b>CRM check:</b> 110 Chennai + ROTN tickets were not registered in CRM. This is an e-commerce team process issue, not a technician fault. Check e-commerce orders in CRM before the visit and escalate missing tickets the same day.</div>
+      <p class="note">Source: Rating_Rejection_Analysis.xlsx · reason counts cover June–October 2026; May has no reason column.</p>`;
+  }
+
+  fetch("analysis.json?v=" + Date.now()).then(r => {
+    if (!r.ok) throw new Error("Analysis not available");
+    return r.json();
+  }).then(draw).catch(() => {
+    root.innerHTML = `<p class="scope">Rejection insights</p><div class="insight-note">The rejection analysis file is not available yet.</div>`;
+  });
   return {
     open() {}
   }

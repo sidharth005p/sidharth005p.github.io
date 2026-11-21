@@ -967,6 +967,155 @@
       font-size: 13.5px
     }
 
+    .insight-kpis {
+      margin-top: 16px
+    }
+
+    .insight-kpis.kpis {
+      grid-template-columns: repeat(4, 1fr)
+    }
+
+    .insight-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr))
+    }
+
+    .insight-section {
+      margin-top: 28px
+    }
+
+    .insight-section h3 {
+      margin: 0 0 10px;
+      font: 500 19px var(--serif);
+      color: var(--navy)
+    }
+
+    .reason-list,
+    .trend-table,
+    .coach-list {
+      display: grid;
+      gap: 8px
+    }
+
+    .reason-row {
+      display: grid;
+      grid-template-columns: 34px minmax(170px, 1.4fr) 68px minmax(160px, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff
+    }
+
+    .reason-rank,
+    .reason-pct,
+    .trend-pct {
+      font-weight: 700;
+      color: var(--navy)
+    }
+
+    .reason-bar,
+    .trend-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #edf0f6;
+      overflow: hidden
+    }
+
+    .reason-bar i,
+    .trend-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #14b8a6, var(--teal))
+    }
+
+    .reason-name strong {
+      display: block;
+      font-size: 13.5px
+    }
+
+    .reason-name span {
+      color: var(--mu);
+      font-size: 12.5px
+    }
+
+    .trend-row,
+    .coach-row {
+      display: grid;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff
+    }
+
+    .coach-head {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.2fr) 70px 70px minmax(180px, 1.5fr);
+      gap: 10px;
+      padding: 0 12px 4px;
+      color: var(--mu);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .trend-row {
+      grid-template-columns: 58px repeat(3, minmax(90px, 1fr))
+    }
+
+    .trend-cell {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 8px;
+      align-items: center;
+      font-size: 12.5px
+    }
+
+    .coach-row {
+      grid-template-columns: minmax(180px, 1.2fr) 70px 70px minmax(180px, 1.5fr)
+    }
+
+    .platform-compare {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px
+    }
+
+    .platform-compare .insight-card b {
+      display: block;
+      margin-top: 4px;
+      font: 600 30px/1.1 var(--serif);
+      color: var(--navy)
+    }
+
+    .action-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden
+    }
+
+    .action-table th,
+    .action-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px
+    }
+
+    .action-table th {
+      background: var(--soft);
+      color: var(--mu)
+    }
+
+    .action-table tr:last-child td {
+      border-bottom: 0
+    }
+
     @media(max-width:760px) {
       .kpis.k3 {
         grid-template-columns: 1fr
@@ -979,6 +1128,41 @@
 
       .insight-grid {
         grid-template-columns: 1fr
+      }
+
+      .insight-grid.three,
+      .insight-kpis.kpis,
+      .platform-compare {
+        grid-template-columns: 1fr
+      }
+
+      .reason-row {
+        grid-template-columns: 28px 1fr 58px
+      }
+
+      .reason-row .reason-bar {
+        grid-column: 2 / 4
+      }
+
+      .trend-row {
+        grid-template-columns: 48px 1fr
+      }
+
+      .trend-cell {
+        grid-column: 2
+      }
+
+      .coach-row {
+        grid-template-columns: 1fr 60px
+      }
+
+      .coach-head {
+        display: none
+      }
+
+      .action-table {
+        display: block;
+        overflow-x: auto
       }
     }
   </style>
