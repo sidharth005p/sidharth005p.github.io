@@ -505,7 +505,6 @@ function mountInsights(root) {
     const franchises = (sheets["Chennai-ROTN franchises"] || []).slice(4).filter(r => r && r.length >= 7).slice(0, 10);
     const topActions = reasonRows.slice(0, 5);
     const barWidth = pct => Math.max(4, Math.min(100, pct));
-
     root.innerHTML = `
       <p class="scope">Rejection insights</p>
       <p class="note">Rating rejection analysis · Chennai &amp; ROTN · May–October 2026</p>
@@ -570,9 +569,9 @@ function mountInsights(root) {
           ${franchises.filter(r => r[3] >= 20 && !/^manivannan\s*s/i.test(String(r[1])) && !/^raja\s*m/i.test(String(r[1]))).slice(0, 5).map(r => `
             <article class="coach-row">
               <strong>${esc(r[1])} · ${esc(r[0])}</strong>
-              <span>${r[2]} submitted</span>
-              <span class="trend-pct">${(r[4] * 100).toFixed(1)}%</span>
-              <span>${esc(r[5])} (${r[6]} tickets)</span>
+              <span><small>Submitted</small><b>${r[2].toLocaleString("en-IN")}</b></span>
+              <span><small>Rejected</small><b class="trend-pct">${(r[4] * 100).toFixed(1)}%</b></span>
+              <span class="coach-reason"><small>Main rejection reason</small>${esc(r[5])}<br><b>${r[6].toLocaleString("en-IN")} tickets</b></span>
             </article>`).join("")}
         </div>
         <p class="note">Franchises with at least 20 submissions, June–October 2026.</p>
@@ -591,6 +590,146 @@ function mountInsights(root) {
   return {
     open() {}
   }
+}
+
+function mountProjectedLoss(root) {
+  root.innerHTML = `<p class="scope">Projected loss based on rejection rate</p><p class="note">Loading projection…</p>`;
+
+  fetch("analysis.json?v=" + Date.now()).then(r => {
+    if (!r.ok) throw new Error("Analysis not available");
+    return r.json();
+  }).then(data => {
+    const sheets = data.sheets || {};
+    const normalizeName = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const franchiseHistory = new Map();
+    (sheets["Chennai-ROTN franchises"] || []).slice(4).forEach(r => {
+      if (r && r[1]) franchiseHistory.set(normalizeName(r[1]), r);
+    });
+    const externalReasonShare = (1659 - 110) / 1659;
+    const currentFranchises = (R && R.franchises ? R.franchises : []).slice();
+
+    function categoryLoss(cats, projectedRejected) {
+      const names = ["C1", "C2"];
+      const totalClosed = names.reduce((sum, c) => sum + (cats[c] ? cats[c].closed || 0 : 0), 0);
+      let allocated = 0;
+      let loss = 0;
+      names.forEach((c, i) => {
+        const cat = cats[c];
+        if (!cat) return;
+        const categoryClosed = cat.closed || 0;
+        const projected = i === 0
+          ? (totalClosed ? Math.round(projectedRejected * categoryClosed / totalClosed) : 0)
+          : Math.max(0, projectedRejected - allocated);
+        allocated += projected;
+        const currentReviews = cat.reviews || 0;
+        const currentEarn = cat.earn || 0;
+        const newReviews = currentReviews + projected;
+        const newPct = categoryClosed ? newReviews / categoryClosed * 100 : (newReviews ? 100 : 0);
+        const slab = CORE.slabOf(newPct);
+        const rate = CORE.rateOf(c, slab);
+        loss += Math.max(0, rate * newReviews - currentEarn);
+      });
+      return loss;
+    }
+
+    function aggregateFranchiseCategories(f) {
+      const cats = {
+        C1: { closed: 0, reviews: 0, earn: 0 },
+        C2: { closed: 0, reviews: 0, earn: 0 }
+      };
+      (f.techs || []).forEach(t => {
+        ["C1", "C2"].forEach(c => {
+          if (!t.cats || !t.cats[c]) return;
+          cats[c].closed += t.cats[c].closed || 0;
+          cats[c].reviews += t.cats[c].reviews || 0;
+          cats[c].earn += t.cats[c].earn || 0;
+        });
+      });
+      return cats;
+    }
+
+    const franchiseRows = currentFranchises.map(f => {
+      const historical = franchiseHistory.get(normalizeName(f.name));
+      const rejectionPct = historical ? historical[4] * 100 : null;
+      const projectedRejected = rejectionPct == null ? 0 : Math.round(f.closed * rejectionPct / 100 * externalReasonShare);
+      return {
+        name: f.name,
+        code: f.code,
+        rejectionPct,
+        closed: f.closed || 0,
+        projectedRejected,
+        earnings: f.earn || 0,
+        loss: categoryLoss(aggregateFranchiseCategories(f), projectedRejected)
+      };
+    }).sort((a, b) => b.loss - a.loss);
+
+    const technicianRows = currentFranchises.flatMap(f => {
+      const historical = franchiseHistory.get(normalizeName(f.name));
+      const rejectionPct = historical ? historical[4] * 100 : null;
+      return (f.techs || []).map(t => {
+        const projectedRejected = rejectionPct == null ? 0 : Math.round((t.closed || 0) * rejectionPct / 100 * externalReasonShare);
+        const cats = {
+          C1: t.cats && t.cats.C1 ? {
+            closed: t.cats.C1.closed || 0,
+            reviews: t.cats.C1.reviews || 0,
+            earn: t.cats.C1.earn || 0
+          } : null,
+          C2: t.cats && t.cats.C2 ? {
+            closed: t.cats.C2.closed || 0,
+            reviews: t.cats.C2.reviews || 0,
+            earn: t.cats.C2.earn || 0
+          } : null
+        };
+        return {
+          name: t.name,
+          franchise: f.name,
+          projectedRejected,
+          earnings: t.earn || 0,
+          loss: categoryLoss(cats, projectedRejected)
+        };
+      });
+    }).sort((a, b) => b.loss - a.loss);
+
+    root.innerHTML = `
+      <p class="scope">Projected loss based on rejection rate</p>
+      <p class="note">Base: 330 accepted tickets out of 509 uploaded, earning ₹80,050. This projection excludes the dashboard’s 179 unmatched tickets and the 110 CRM-not-registered process tickets. Loss is recalculated using Category 1 / Category 2 current closed-ticket counts and the 25%, 50%, 75% or 100% slab rate.</p>
+
+      <section class="insight-section">
+        <h3>Projected loss by franchise</h3>
+        <div id="projected-franchise-table"></div>
+      </section>
+
+      <section class="insight-section">
+        <h3>Projected loss by technician</h3>
+        <div id="projected-technician-table"></div>
+      </section>`;
+
+    const draw = () => {
+      ftable(root.querySelector("#projected-franchise-table"), "projected-franchise", [
+        ["Franchise", "name", r => `<strong>${esc(r.name)}</strong><br><small>${esc(r.code)}</small>`],
+        ["Analysis rejection %", "rejectionPct", r => r.rejectionPct == null ? "—" : r.rejectionPct.toFixed(1) + "%"],
+        ["Current closed tickets", "closed", r => r.closed.toLocaleString("en-IN")],
+        ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
+        ["Earnings now", "earnings", r => inr(r.earnings)],
+        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+      ], franchiseRows, draw);
+
+      ftable(root.querySelector("#projected-technician-table"), "projected-technician", [
+        ["Technician", "name", r => `<strong>${esc(r.name)}</strong>`],
+        ["Franchise", "franchise"],
+        ["Projected other-reason rejections", "projectedRejected", r => r.projectedRejected.toLocaleString("en-IN")],
+        ["Earnings now", "earnings", r => inr(r.earnings)],
+        ["Projected earnings loss", "loss", r => `<span class="loss">${inr(r.loss)}</span>`, "n"]
+      ], technicianRows, draw);
+    };
+    draw();
+  }).catch(() => {
+    root.innerHTML = `<p class="scope">Projected loss based on rejection rate</p><div class="insight-note">The rejection analysis file is not available yet.</div>`;
+  });
+
+  return {
+    open() {}
+  };
 }
 
 /* ============ Excel download of selected subsections ============ */
@@ -729,12 +868,14 @@ fetch("report.json?v=" + Date.now()).then(r => r.json()).then(j => {
   P.new = mountDash($("pg-new"), "new", j.newRules || j.nr || j);
   P.rej = mountRej($("pg-rej"));
   P.insights = mountInsights($("pg-insights"));
+  P.proj = mountProjectedLoss($("pg-proj"));
   P.all = mountDash($("pg-all"), "all");
   const T = [
     ["main", "Review dashboard"],
     ["new", "Dashboard based on new rules"],
     ["rej", "Rejected tickets", j.rejected.length],
     ["insights", "Rejection insights"],
+    ["proj", "Projected loss based on rejection rate"],
     ["all", "If all " + t.reviewTickets + " accepted"]
   ];
   $("tabs").innerHTML = T.map(([k, l, n]) =>

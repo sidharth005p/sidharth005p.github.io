@@ -1053,9 +1053,9 @@
 
     .coach-head {
       display: grid;
-      grid-template-columns: minmax(180px, 1.2fr) 70px 70px minmax(180px, 1.5fr);
-      gap: 10px;
-      padding: 0 12px 4px;
+      grid-template-columns: minmax(220px, 1.35fr) 100px 100px minmax(260px, 1.8fr);
+      gap: 14px;
+      padding: 0 16px 6px;
       color: var(--mu);
       font-size: 12px;
       font-weight: 700
@@ -1074,7 +1074,30 @@
     }
 
     .coach-row {
-      grid-template-columns: minmax(180px, 1.2fr) 70px 70px minmax(180px, 1.5fr)
+      grid-template-columns: minmax(220px, 1.35fr) 100px 100px minmax(260px, 1.8fr);
+      gap: 14px;
+      padding: 14px 16px
+    }
+
+    .coach-row>span {
+      line-height: 1.45
+    }
+
+    .coach-row>span:not(:first-of-type) {
+      color: var(--ink)
+    }
+
+    .coach-row small,
+    .coach-head small {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--mu);
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    .coach-reason {
+      overflow-wrap: anywhere
     }
 
     .platform-compare {
@@ -1116,6 +1139,49 @@
       border-bottom: 0
     }
 
+    .loss-table-wrap {
+      max-height: 480px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px
+    }
+
+    .loss-table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    .loss-table th,
+    .loss-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+      font-size: 13px
+    }
+
+    .loss-table th:first-child,
+    .loss-table td:first-child {
+      text-align: left
+    }
+
+    .loss-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--soft);
+      color: var(--mu)
+    }
+
+    .loss-table tr:last-child td {
+      border-bottom: 0
+    }
+
+    .loss-table .loss {
+      color: #b42318;
+      font-weight: 700
+    }
+
     @media(max-width:760px) {
       .kpis.k3 {
         grid-template-columns: 1fr
@@ -1153,7 +1219,17 @@
       }
 
       .coach-row {
-        grid-template-columns: 1fr 60px
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 14px
+      }
+
+      .coach-row strong {
+        grid-column: 1 / -1
+      }
+
+      .coach-row .coach-reason {
+        grid-column: 1 / -1
       }
 
       .coach-head {
@@ -1225,6 +1301,7 @@
     <div id="pg-new" class="pg" hidden></div>
     <div id="pg-rej" class="pg" hidden></div>
     <div id="pg-insights" class="pg" hidden></div>
+    <div id="pg-proj" class="pg" hidden></div>
     <div id="pg-all" class="pg all" hidden></div>
     <div id="pop" class="pop" hidden></div>
     <dialog id="dlg">
